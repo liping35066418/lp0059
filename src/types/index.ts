@@ -9,6 +9,7 @@ export interface HistoryItem {
   input: string;
   output: string;
   createdAt: string;
+  favorited: boolean;
 }
 
 export interface ApiResponse<T> {

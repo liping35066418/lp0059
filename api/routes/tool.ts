@@ -183,6 +183,7 @@ router.post('/history', async (req: Request, res: Response): Promise<void> => {
       input,
       output,
       createdAt: new Date().toISOString(),
+      favorited: false,
     }
     items.unshift(newItem)
     writeHistory(items)
@@ -191,6 +192,27 @@ router.post('/history', async (req: Request, res: Response): Promise<void> => {
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Add history failed'
     appendLog('history', 'add', 'error', msg)
+    res.status(500).json({ success: false, error: msg })
+  }
+})
+
+router.put('/history/:id/favorite', async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params
+  try {
+    const items = readHistory()
+    const index = items.findIndex((item) => item.id === id)
+    if (index === -1) {
+      appendLog('history', 'favorite', 'error', 'History not found')
+      res.status(404).json({ success: false, error: 'History not found' })
+      return
+    }
+    items[index].favorited = !items[index].favorited
+    writeHistory(items)
+    appendLog('history', 'favorite', 'success')
+    res.json({ success: true, data: items[index] })
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Toggle favorite failed'
+    appendLog('history', 'favorite', 'error', msg)
     res.status(500).json({ success: false, error: msg })
   }
 })

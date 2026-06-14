@@ -50,7 +50,7 @@ export async function getHistory(): Promise<ApiResponse<HistoryItem[]>> {
   return request<HistoryItem[]>('/api/history');
 }
 
-export async function addHistory(item: Omit<HistoryItem, 'id' | 'createdAt'>): Promise<ApiResponse<HistoryItem>> {
+export async function addHistory(item: Omit<HistoryItem, 'id' | 'createdAt' | 'favorited'>): Promise<ApiResponse<HistoryItem>> {
   return request<HistoryItem>('/api/history', {
     method: 'POST',
     body: JSON.stringify(item),
@@ -60,5 +60,11 @@ export async function addHistory(item: Omit<HistoryItem, 'id' | 'createdAt'>): P
 export async function clearHistory(): Promise<ApiResponse<void>> {
   return request<void>('/api/history', {
     method: 'DELETE',
+  });
+}
+
+export async function toggleFavorite(id: string): Promise<ApiResponse<HistoryItem>> {
+  return request<HistoryItem>(`/api/history/${id}/favorite`, {
+    method: 'PUT',
   });
 }

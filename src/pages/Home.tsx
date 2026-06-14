@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Code,
   Lock,
@@ -9,6 +9,7 @@ import {
   Check,
   Server,
   Circle,
+  ListTodo,
 } from 'lucide-react';
 import Toast, { type ToastType } from '@/components/Toast';
 import HistoryPanel from '@/components/HistoryPanel';
@@ -49,6 +50,12 @@ export default function Home() {
   const [encodeAction, setEncodeAction] = useState<EncodeAction>('encode');
   const [cryptoAction, setCryptoAction] = useState<CryptoAction>('encrypt');
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const todayCount = useMemo(() => {
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    return history.filter((item) => item.createdAt.startsWith(todayStr)).length;
+  }, [history]);
 
   const showToast = useCallback((type: ToastType, message: string) => {
     setToast({ type, message });
@@ -330,15 +337,21 @@ export default function Home() {
               <p className="text-xs text-slate-400 mt-0.5">本地开发调试安全工具</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/60 border border-slate-700/50">
-            <Server className="w-4 h-4 text-slate-400" />
-            <span className="text-xs text-slate-300 font-medium">端口 8719</span>
-            <Circle
-              className={cn(
-                'w-2.5 h-2.5 fill-current',
-                serverOnline ? 'text-teal-400' : 'text-red-400'
-              )}
-            />
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/60 border border-slate-700/50">
+              <Server className="w-4 h-4 text-slate-400" />
+              <span className="text-xs text-slate-300 font-medium">端口 8719</span>
+              <Circle
+                className={cn(
+                  'w-2.5 h-2.5 fill-current',
+                  serverOnline ? 'text-teal-400' : 'text-red-400'
+                )}
+              />
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/60 border border-slate-700/50">
+              <ListTodo className="w-4 h-4 text-slate-400" />
+              <span className="text-xs text-slate-300 font-medium">今日操作 {todayCount} 次</span>
+            </div>
           </div>
         </div>
       </header>

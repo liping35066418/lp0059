@@ -16,6 +16,7 @@ export interface HistoryItem {
   input: string
   output: string
   createdAt: string
+  favorited: boolean
 }
 
 export function ensureDataDir(): void {
@@ -34,7 +35,11 @@ export function readHistory(): HistoryItem[] {
   }
   try {
     const content = fs.readFileSync(HISTORY_FILE, 'utf-8')
-    return JSON.parse(content)
+    const data = JSON.parse(content) as (HistoryItem & { favorited?: boolean })[]
+    return data.map((item) => ({
+      ...item,
+      favorited: item.favorited ?? false,
+    }))
   } catch {
     return []
   }
