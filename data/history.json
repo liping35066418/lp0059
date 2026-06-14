@@ -1,42 +1,10 @@
 [
   {
-    "id": "mqcywqf9y1dtlova",
-    "type": "decrypt",
-    "subType": "aes",
-    "input": "PNx0ayVp9fspK8D/i4AawUl8qZR3cJoLAoRlY+Q8R2I=",
-    "output": "敏感数据 test@123",
-    "createdAt": "2026-06-13T23:09:39.141Z"
-  },
-  {
-    "id": "mqcyuu3fzxz9pyhd",
+    "id": "mqdkxxyol44319gk",
     "type": "encrypt",
     "subType": "aes",
-    "input": "敏感数据 test@123",
-    "output": "PNx0ayVp9fspK8D/i4AawUl8qZR3cJoLAoRlY+Q8R2I=",
-    "createdAt": "2026-06-13T23:08:10.587Z"
-  },
-  {
-    "id": "mqcy9j222p2t83gl",
-    "type": "encode",
-    "subType": "base64",
-    "input": "Network Encoding Tool",
-    "output": "TmV0d29yayBFbmNvZGluZyBUb29s",
-    "createdAt": "2026-06-13T22:51:36.506Z"
-  },
-  {
-    "id": "mqcy51kop2y3pepz",
-    "type": "decode",
-    "subType": "url",
-    "input": "hello%20world%20%E4%BD%A0%E5%A5%BD%E4%B8%96%E7%95%8C!",
-    "output": "hello world 你好世界!",
-    "createdAt": "2026-06-13T22:48:07.224Z"
-  },
-  {
-    "id": "mqcxz01b8km9s7b6",
-    "type": "encode",
-    "subType": "url",
-    "input": "hello world 你好世界!",
-    "output": "hello%20world%20%E4%BD%A0%E5%A5%BD%E4%B8%96%E7%95%8C!",
-    "createdAt": "2026-06-13T22:43:25.295Z"
+    "input": "89999",
+    "output": "70zg7Yv7LhuLrDotC1kRww==",
+    "createdAt": "2026-06-14T09:26:27.120Z"
   }
 ]

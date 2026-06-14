@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Code,
   Lock,
@@ -25,6 +25,8 @@ import {
 } from '@/services/api';
 
 type TabMode = 'encode' | 'crypto';
+type EncodeAction = 'encode' | 'decode';
+type CryptoAction = 'encrypt' | 'decrypt';
 
 const encodeOptions: { value: EncodeType; label: string }[] = [
   { value: 'url', label: 'URL' },
@@ -44,6 +46,9 @@ export default function Home() {
   const [toast, setToast] = useState<{ type: ToastType; message: string } | null>(null);
   const [copied, setCopied] = useState(false);
   const [serverOnline, setServerOnline] = useState(true);
+  const [encodeAction, setEncodeAction] = useState<EncodeAction>('encode');
+  const [cryptoAction, setCryptoAction] = useState<CryptoAction>('encrypt');
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showToast = useCallback((type: ToastType, message: string) => {
     setToast({ type, message });
@@ -66,19 +71,88 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [fetchHistory]);
 
-  const handleEncode = async () => {
+  const processInput = useCallback(async () => {
     if (!inputValue.trim()) {
+      setOutputValue('');
+      return;
+    }
+
+    if (tabMode === 'encode') {
+      if (encodeAction === 'encode') {
+        const res = await encode(encodeType, inputValue);
+        if (res.success && res.result !== undefined) {
+          setOutputValue(res.result);
+        } else {
+          setOutputValue('');
+        }
+      } else {
+        const res = await decode(encodeType, inputValue);
+        if (res.success && res.result !== undefined) {
+          setOutputValue(res.result);
+        } else {
+          setOutputValue('');
+        }
+      }
+    } else {
+      if (!keyValue.trim()) {
+        setOutputValue('');
+        return;
+      }
+      if (cryptoAction === 'encrypt') {
+        const res = await encrypt(inputValue, keyValue);
+        if (res.success && res.result !== undefined) {
+          setOutputValue(res.result);
+        } else {
+          setOutputValue('');
+        }
+      } else {
+        const res = await decrypt(inputValue, keyValue);
+        if (res.success && res.result !== undefined) {
+          setOutputValue(res.result);
+        } else {
+          setOutputValue('');
+        }
+      }
+    }
+  }, [inputValue, encodeType, keyValue, tabMode, encodeAction, cryptoAction]);
+
+  useEffect(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      processInput();
+    }, 300);
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [processInput]);
+
+  const handleEncode = async () => {
+    let content = inputValue;
+
+    if (encodeAction !== 'encode') {
+      setEncodeAction('encode');
+      if (outputValue.trim()) {
+        content = outputValue;
+        setInputValue(outputValue);
+      }
+    }
+
+    if (!content.trim()) {
       showToast('error', '请输入需要编码的内容');
       return;
     }
-    const res = await encode(encodeType, inputValue);
+    const res = await encode(encodeType, content);
     if (res.success && res.result !== undefined) {
       setOutputValue(res.result);
       showToast('success', '编码成功');
       await addHistory({
         type: 'encode',
         subType: encodeType,
-        input: inputValue,
+        input: content,
         output: res.result,
       });
       fetchHistory();
@@ -88,18 +162,28 @@ export default function Home() {
   };
 
   const handleDecode = async () => {
-    if (!inputValue.trim()) {
+    let content = inputValue;
+
+    if (encodeAction !== 'decode') {
+      setEncodeAction('decode');
+      if (outputValue.trim()) {
+        content = outputValue;
+        setInputValue(outputValue);
+      }
+    }
+
+    if (!content.trim()) {
       showToast('error', '请输入需要解码的内容');
       return;
     }
-    const res = await decode(encodeType, inputValue);
+    const res = await decode(encodeType, content);
     if (res.success && res.result !== undefined) {
       setOutputValue(res.result);
       showToast('success', '解码成功');
       await addHistory({
         type: 'decode',
         subType: encodeType,
-        input: inputValue,
+        input: content,
         output: res.result,
       });
       fetchHistory();
@@ -109,7 +193,17 @@ export default function Home() {
   };
 
   const handleEncrypt = async () => {
-    if (!inputValue.trim()) {
+    let content = inputValue;
+
+    if (cryptoAction !== 'encrypt') {
+      setCryptoAction('encrypt');
+      if (outputValue.trim()) {
+        content = outputValue;
+        setInputValue(outputValue);
+      }
+    }
+
+    if (!content.trim()) {
       showToast('error', '请输入需要加密的内容');
       return;
     }
@@ -117,14 +211,14 @@ export default function Home() {
       showToast('error', '请输入密钥');
       return;
     }
-    const res = await encrypt(inputValue, keyValue);
+    const res = await encrypt(content, keyValue);
     if (res.success && res.result !== undefined) {
       setOutputValue(res.result);
       showToast('success', '加密成功');
       await addHistory({
         type: 'encrypt',
         subType: 'aes',
-        input: inputValue,
+        input: content,
         output: res.result,
       });
       fetchHistory();
@@ -134,7 +228,17 @@ export default function Home() {
   };
 
   const handleDecrypt = async () => {
-    if (!inputValue.trim()) {
+    let content = inputValue;
+
+    if (cryptoAction !== 'decrypt') {
+      setCryptoAction('decrypt');
+      if (outputValue.trim()) {
+        content = outputValue;
+        setInputValue(outputValue);
+      }
+    }
+
+    if (!content.trim()) {
       showToast('error', '请输入需要解密的内容');
       return;
     }
@@ -142,14 +246,14 @@ export default function Home() {
       showToast('error', '请输入密钥');
       return;
     }
-    const res = await decrypt(inputValue, keyValue);
+    const res = await decrypt(content, keyValue);
     if (res.success && res.result !== undefined) {
       setOutputValue(res.result);
       showToast('success', '解密成功');
       await addHistory({
         type: 'decrypt',
         subType: 'aes',
-        input: inputValue,
+        input: content,
         output: res.result,
       });
       fetchHistory();
@@ -184,11 +288,13 @@ export default function Home() {
     setOutputValue(item.output);
     if (item.type === 'encode' || item.type === 'decode') {
       setTabMode('encode');
+      setEncodeAction(item.type as EncodeAction);
       if (['url', 'base64', 'unicode', 'html', 'hex'].includes(item.subType)) {
         setEncodeType(item.subType as EncodeType);
       }
     } else {
       setTabMode('crypto');
+      setCryptoAction(item.type as CryptoAction);
     }
     showToast('info', '已载入历史记录');
   };
@@ -331,14 +437,24 @@ export default function Home() {
                   <>
                     <button
                       onClick={handleEncode}
-                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-teal-500 text-white text-sm font-medium hover:from-teal-500 hover:to-teal-400 transition-all shadow-lg shadow-teal-500/20 active:scale-95"
+                      className={cn(
+                        'flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-medium transition-all shadow-lg active:scale-95',
+                        encodeAction === 'encode'
+                          ? 'bg-gradient-to-r from-teal-600 to-teal-500 shadow-teal-500/20'
+                          : 'bg-slate-700/60 hover:from-teal-500 hover:to-teal-400 hover:shadow-teal-500/20'
+                      )}
                     >
                       <ArrowRight className="w-4 h-4" />
                       编码
                     </button>
                     <button
                       onClick={handleDecode}
-                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 text-white text-sm font-medium hover:from-amber-500 hover:to-amber-400 transition-all shadow-lg shadow-amber-500/20 active:scale-95"
+                      className={cn(
+                        'flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-medium transition-all shadow-lg active:scale-95',
+                        encodeAction === 'decode'
+                          ? 'bg-gradient-to-r from-amber-600 to-amber-500 shadow-amber-500/20'
+                          : 'bg-slate-700/60 hover:from-amber-500 hover:to-amber-400 hover:shadow-amber-500/20'
+                      )}
                     >
                       <ArrowLeft className="w-4 h-4" />
                       解码
@@ -348,14 +464,24 @@ export default function Home() {
                   <>
                     <button
                       onClick={handleEncrypt}
-                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-teal-500 text-white text-sm font-medium hover:from-teal-500 hover:to-teal-400 transition-all shadow-lg shadow-teal-500/20 active:scale-95"
+                      className={cn(
+                        'flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-medium transition-all shadow-lg active:scale-95',
+                        cryptoAction === 'encrypt'
+                          ? 'bg-gradient-to-r from-teal-600 to-teal-500 shadow-teal-500/20'
+                          : 'bg-slate-700/60 hover:from-teal-500 hover:to-teal-400 hover:shadow-teal-500/20'
+                      )}
                     >
                       <Lock className="w-4 h-4" />
                       加密
                     </button>
                     <button
                       onClick={handleDecrypt}
-                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 text-white text-sm font-medium hover:from-amber-500 hover:to-amber-400 transition-all shadow-lg shadow-amber-500/20 active:scale-95"
+                      className={cn(
+                        'flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-medium transition-all shadow-lg active:scale-95',
+                        cryptoAction === 'decrypt'
+                          ? 'bg-gradient-to-r from-amber-600 to-amber-500 shadow-amber-500/20'
+                          : 'bg-slate-700/60 hover:from-amber-500 hover:to-amber-400 hover:shadow-amber-500/20'
+                      )}
                     >
                       <ArrowRight className="w-4 h-4" />
                       解密
